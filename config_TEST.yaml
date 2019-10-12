@@ -1,0 +1,23 @@
+metaG_accession: axial_metaG
+metaT_accession: axial_metaT
+metaG_ena_table: /vortexfs1/omics/huber/shu/axial-data/axial_metaG_TEST.txt
+metaT_ena_table: /vortexfs1/omics/huber/shu/axial-data/axial_metaT_TEST.txt
+
+inputDIR: /vortexfs1/omics/huber/shu/axial-data/raw_data
+outputDIR: /vortexfs1/omics/huber/shu/axial-data/snake-output
+scratch:  /vortexfs1/scratch/sarahhu/axial
+
+adapters: input/adapters/illumina-adapters.fa
+metaG_sample_list: /vortexfs1/omics/huber/shu/axial-data/axial_metaG_Assembly_List_TEST.txt
+metaT_sample_list: /vortexfs1/omics/huber/shu/axial-data/axial_metaT_Assembly_List_TEST.txt
+
+megahit_other: --continue --k-list 29,39,59,79,99,119 
+megahit_cpu: 80
+megahit_min_contig: 1000
+megahit_mem: .95
+restart-times: 0
+max-jobs-per-second: 1
+max-status-checks-per-second: 10
+local-cores: 1
+rerun-incomplete: true
+keep-going: true
