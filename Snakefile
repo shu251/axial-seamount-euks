@@ -1,4 +1,4 @@
-configfile: "config_TEST.yaml"  
+configfile: "config.yaml"  
 
 import io 
 import os
@@ -78,28 +78,10 @@ pathlib.Path(OUTPUTDIR).mkdir(parents=True, exist_ok=True)
 
 #----DEFINE RULES----#
 
-localrules: multiqc, copy_bwa_index 
+localrules: copy_bwa_index 
 
 rule all: 
     input:
-        # QC DATA
-        fastqcZIP_rawG = expand("{base}/qc/fastqc/{study}/{sample}_{num}_fastqc.zip", base = OUTPUTDIR, study = METAG_ACCESSION, sample=metaG_run_accession, num = [1,2]),
-        fastqcZIP_rawT = expand("{base}/qc/fastqc/{study}/{sample}_{num}_fastqc.zip", base = OUTPUTDIR, study = METAT_ACCESSION, sample=metaT_run_accession, num = [1,2]),  
-        fastqcZIP_trimmedG = expand("{base}/qc/fastqc/{study}/{sample}_{num}.trimmed_fastqc.zip", base = OUTPUTDIR, study = METAG_ACCESSION, sample=metaG_run_accession, num = [1,2]),  
-        fastqcZIP_trimmedT = expand("{base}/qc/fastqc/{study}/{sample}_{num}.trimmed_fastqc.zip", base = OUTPUTDIR, study = METAT_ACCESSION, sample=metaT_run_accession, num = [1,2]),  
-        #MULTIQC
-        html_rawG = OUTPUTDIR + "/qc/rawG_multiqc.html",
-        stats_rawG = OUTPUTDIR + "/qc/rawG_multiqc_general_stats.txt",
-        html_trimmedG = OUTPUTDIR + "/qc/trimmedG_multiqc.html",
-        stats_trimmedG = OUTPUTDIR + "/qc/trimmedG_multiqc_general_stats.txt",
-        html_rawT = OUTPUTDIR + "/qc/rawT_multiqc.html",
-        stats_rawT = OUTPUTDIR + "/qc/rawT_multiqc_general_stats.txt",
-        html_trimmedT = OUTPUTDIR + "/qc/trimmedT_multiqc.html",
-        stats_trimmedT = OUTPUTDIR + "/qc/trimmedT_multiqc_general_stats.txt",
-        #TRIM DATA
-        trimmedDataG = expand("{base}/trimmed/{study}/{sample}_{num}.trimmed.fastq.gz", base = SCRATCHDIR, study = METAG_ACCESSION, sample=metaG_run_accession, num = [1,2]), 
-        trimmedDataT = expand("{base}/trimmed/{study}/{sample}_{num}.trimmed.fastq.gz", base = SCRATCHDIR, study = METAT_ACCESSION, sample=metaT_run_accession, num = [1,2]), 
-
         #CALCULATE SOURMASH
         signatureG = expand("{base}/sourmash/{study}/{sample}.10k.sig", base = SCRATCHDIR, study = METAG_ACCESSION, sample = metaG_run_accession),
         signatureT = expand("{base}/sourmash/{study}/{sample}.10k.sig", base = SCRATCHDIR, study = METAT_ACCESSION, sample = metaT_run_accession),
@@ -127,88 +109,6 @@ rule all:
         #PROTEIN PREDICITION
         #PRODIGAL
         proteins = expand("{base}/prodigal/{assembly_group}/proteins.faa", base = OUTPUTDIR, assembly_group = METAG_ASSEMBLYGROUP), 
-
-rule fastqc:
-    input:
-        INPUTDIR + "/{study}/{sample}/{sample}_{num}.fastq.gz"     
-    output:
-        html = OUTPUTDIR + '/qc/fastqc/{study}/{sample}_{num}_fastqc.html', 
-        zip = OUTPUTDIR + '/qc/fastqc/{study}/{sample}_{num}_fastqc.zip'
-    params: ""
-    log: 
-        OUTPUTDIR + '/logs/fastqc/{study}/{sample}_{num}.log'
-    wrapper:
-        "0.27.1/bio/fastqc"
-
-rule trimmomatic: 
-    input:
-        r1 = INPUTDIR + "/{study}/{sample}/{sample}_1.fastq.gz", 
-        r2 = INPUTDIR + "/{study}/{sample}/{sample}_2.fastq.gz" 
-    output:
-        r1 = SCRATCHDIR + "/trimmed/{study}/{sample}_1.trimmed.fastq.gz",
-        r2 = SCRATCHDIR + "/trimmed/{study}/{sample}_2.trimmed.fastq.gz",
-        # reads where trimming entirely removed the mate
-        r1_unpaired = SCRATCHDIR + "/trimmed/{study}/{sample}_1.unpaired.fastq.gz",
-        r2_unpaired = SCRATCHDIR + "/trimmed/{study}/{sample}_2.unpaired.fastq.gz"
-    log:
-        OUTPUTDIR +  "/logs/trimmomatic/{study}/{sample}.log"
-    params:
-        trimmer=["ILLUMINACLIP:{}:2:30:7".format(ADAPTERS), "LEADING:2", "TRAILING:2", "SLIDINGWINDOW:4:2", "MINLEN:50"],
-        extra=""
-    wrapper:
-        "0.27.1/bio/trimmomatic/pe"
-
-rule fastqc_trimmed:
-    input:
-        SCRATCHDIR + "/trimmed/{study}/{sample}_{num}.trimmed.fastq.gz" 
-    output:
-        html = OUTPUTDIR + '/qc/fastqc/{study}/{sample}_{num}.trimmed_fastqc.html', 
-        zip = OUTPUTDIR + '/qc/fastqc/{study}/{sample}_{num}.trimmed_fastqc.zip'
-    params: ""
-    log: 
-        OUTPUTDIR + '/logs/fastqc/{study}/{sample}_{num}.trimmed.log'
-    wrapper:
-        "0.27.1/bio/fastqc"
-
-rule multiqc:
-    input:
-        rawG = expand("{base}/qc/fastqc/{study}/{sample}_{num}_fastqc.zip", base = OUTPUTDIR, study = METAG_ACCESSION, sample = metaG_run_accession, num = [1,2]), 
-        trimmedG = expand("{base}/qc/fastqc/{study}/{sample}_{num}.trimmed_fastqc.zip", base = OUTPUTDIR, study = METAG_ACCESSION, sample = metaG_run_accession, num = [1,2]), 
-        rawT = expand("{base}/qc/fastqc/{study}/{sample}_{num}_fastqc.zip", base = OUTPUTDIR, study = METAT_ACCESSION, sample = metaT_run_accession, num = [1,2]), 
-        trimmedT = expand("{base}/qc/fastqc/{study}/{sample}_{num}.trimmed_fastqc.zip", base = OUTPUTDIR, study = METAT_ACCESSION, sample = metaT_run_accession, num = [1,2]) 
-    output:
-        html_rawG = OUTPUTDIR + "/qc/rawG_multiqc.html", 
-        stats_rawG = OUTPUTDIR + "/qc/rawG_multiqc_general_stats.txt",
-        html_trimmedG = OUTPUTDIR + "/qc/trimmedG_multiqc.html", 
-        stats_trimmedG = OUTPUTDIR + "/qc/trimmedG_multiqc_general_stats.txt",
-        html_rawT = OUTPUTDIR + "/qc/rawT_multiqc.html", 
-        stats_rawT = OUTPUTDIR + "/qc/rawT_multiqc_general_stats.txt",
-        html_trimmedT = OUTPUTDIR + "/qc/trimmedT_multiqc.html", 
-        stats_trimmedT = OUTPUTDIR + "/qc/trimmedT_multiqc_general_stats.txt"
-    conda: 
-        "envs/multiqc-env-v1.7.yaml"
-    shell: 
-        """
-        multiqc -n multiqc.html {input.rawG}
-        mv multiqc.html {output.html_rawG}
-        mv multiqc_data/multiqc_general_stats.txt {output.stats_rawG} 
-        rm -rf multiqc_data
-
-        multiqc -n multiqc.html {input.trimmedG}
-        mv multiqc.html {output.html_trimmedG}
-        mv multiqc_data/multiqc_general_stats.txt {output.stats_trimmedG} 
-        rm -rf multiqc_data
-        
-        multiqc -n multiqc.html {input.trimmedT}
-        mv multiqc.html {output.html_trimmedT}
-        mv multiqc_data/multiqc_general_stats.txt {output.stats_trimmedT} 
-        rm -rf multiqc_data
-        
-        multiqc -n multiqc.html {input.trimmedT}
-        mv multiqc.html {output.html_trimmedT}
-        mv multiqc_data/multiqc_general_stats.txt {output.stats_trimmedT} 
-        rm -rf multiqc_data
-        """ 
 
 rule compute_sigs:
     input:
